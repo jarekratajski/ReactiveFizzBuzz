@@ -6,6 +6,7 @@ import akka.stream.scaladsl._
 import scalaz._
 import Scalaz._
 
+
 object FizzBuzz {
 
   def main(args: Array[String]): Unit = {
@@ -25,29 +26,26 @@ object FizzBuzz {
       val bcast = builder.add(Broadcast[Int](3))
 
       val merge = builder.add(ZipWith[Option[String], Option[String], String, String](
-        (a, b, c) => a | "" + ( b | (  (a.isDefined) ?  {""} | c ) )
+        (a, b, c) => (a  | "" )+ ( b| ( (a.isDefined) ?  "" | c ) )
       ))
 
 
-      val fizzer = Flow[Int].map(x => if (x % 3 == 0) Some("Fizz") else None)
-      val buzzer = Flow[Int].map(x => if (x % 5 == 0) Some("Buzz") else None)
+      val fizzer = Flow[Int].map(x => (x % 3 == 0) ? "Fizz".some  | none[String])
+      val buzzer = Flow[Int].map(x =>  (x % 5 == 0) ? "Buzz".some | none[String])
       val stringify = Flow[Int].map(_.toString)
+
       val out = akka.stream.scaladsl.Sink.foreach[String] { value =>
         println(value)
       }
 
-      inputSource ~> bcast     ~> fizzer ~> merge.in0
-                 bcast ~> buzzer   ~> merge.in1
-                 bcast ~> stringify ~> merge.in2
+        inputSource ~> bcast     ~> fizzer ~> merge.in0
+                                  bcast ~> buzzer   ~> merge.in1
+                                  bcast ~> stringify ~> merge.in2
 
-      merge.out ~> out
-
+                                        merge.out ~> out
       ClosedShape
     })
 
-
     fizzbuzzGraph.run()
-
-
   }
 }
