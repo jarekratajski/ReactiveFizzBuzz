@@ -1,8 +1,9 @@
 package fun.reactive.fizzbuzz
 
 import akka.actor.ActorSystem
-import akka.stream.{ClosedShape, ActorMaterializer}
+import akka.stream.{Attributes, ClosedShape, ActorMaterializer}
 import akka.stream.scaladsl._
+import scala.concurrent.{Future, Await}
 import scalaz._
 import Scalaz._
 
@@ -30,8 +31,16 @@ object FizzBuzz {
       ))
 
 
-      val fizzer = Flow[Int].map(x => (x % 3 == 0) ? "Fizz".some  | none[String])
-      val buzzer = Flow[Int].map(x =>  (x % 5 == 0) ? "Buzz".some | none[String])
+      val fizzer = Flow[Int].map(x => {
+
+        Thread.sleep(20)
+         (x % 3 == 0) ? "Fizz".some  | none[String]
+      }).addAttributes(Attributes.asyncBoundary)
+      val buzzer = Flow[Int].map(x => {
+        Thread.sleep(10)
+
+         (x % 5 == 0) ? "Buzz".some | none[String]
+      }).addAttributes(Attributes.asyncBoundary)
       val stringify = Flow[Int].map(_.toString)
 
       val out = akka.stream.scaladsl.Sink.foreach[String] { value =>
@@ -46,6 +55,11 @@ object FizzBuzz {
       ClosedShape
     })
 
-    fizzbuzzGraph.run()
+
+
+    val materialized = fizzbuzzGraph.run()
+
+
+
   }
 }
